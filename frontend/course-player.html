@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learning Path | EduStream Elite</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; color: white; overflow-x: hidden; }
+        .sidebar-course { background: #1e293b; height: 100vh; overflow-y: auto; border-left: 1px solid #334155; }
+        @media (max-width: 991px) { .sidebar-course { height: auto; border-left: none; border-top: 1px solid #334155; } }
+        
+        .video-container { background: black; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid #334155; }
+        .nav-tabs .nav-link { color: #94a3b8; border: none; font-weight: 600; padding: 1rem 1.5rem; }
+        .nav-tabs .nav-link.active { color: #3b82f6; background: none; border-bottom: 3px solid #3b82f6; }
+        
+        .lesson-item { cursor: pointer; transition: 0.2s; border-radius: 12px; border: 1px solid transparent; margin-bottom: 5px; }
+        .lesson-item:hover { background: #334155 !important; }
+        .lesson-item.active { background: #2563eb !important; color: white !important; border-color: #3b82f6; }
+        
+        .progress { height: 8px; background: #334155; border-radius: 10px; }
+        .form-check-input { cursor: pointer; scale: 1.2; }
+        .quiz-card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 20px; margin-bottom: 15px; }
+        .back-btn { transition: 0.2s; color: #94a3b8; text-decoration: none; display: inline-block; }
+        .back-btn:hover { color: #fff; transform: translateX(-5px); }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-9 p-4" id="mainContent">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <a href="index.html" class="back-btn fw-600"><i class="bi bi-arrow-left me-2"></i> Back to Courses</a>
+                <div class="w-25">
+                    <div class="d-flex justify-content-between mb-1 small">
+                        <span>Progress</span>
+                        <span id="progressText">0%</span>
+                    </div>
+                    <div class="progress">
+                        <div id="progressBar" class="progress-bar bg-primary" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="video-container mb-4">
+                <div class="ratio ratio-16x9">
+                    <iframe id="mainVideo" src="" title="Course Video" allowfullscreen></iframe>
+                </div>
+            </div>
+
+            <h2 id="displayTitle" class="fw-800 mb-1">Loading...</h2>
+            <p id="displaySection" class="text-muted small text-uppercase">Section</p>
+            
+            <ul class="nav nav-tabs mt-4" id="courseTabs" role="tablist">
+                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#overview">Overview</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#examTab">Final Exam</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#qaTab">Q&A</button></li>
+            </ul>
+
+            <div class="tab-content p-4 bg-white bg-opacity-5 rounded-bottom">
+                <div class="tab-pane fade show active" id="overview">
+                    <h5>About this lesson</h5>
+                    <p class="text-muted">Master the technical requirements and creative workflows in this section. Your progress is saved automatically via Firebase.</p>
+                </div>
+
+                <div class="tab-pane fade" id="examTab">
+                    <div id="quizResultArea"></div>
+                    <div id="quizContainer"></div>
+                    <button id="submitBtn" class="btn btn-primary rounded-pill px-5 py-2 mt-4" onclick="window.submitQuiz()">Submit Final Exam</button>
+                </div>
+
+                <div class="tab-pane fade" id="qaTab">
+                    <div class="mb-3">
+                        <textarea class="form-control bg-dark text-white border-secondary mb-2" rows="3" placeholder="Ask a question..."></textarea>
+                        <button class="btn btn-primary">Post Question</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 sidebar-course p-4">
+            <h5 class="fw-bold mb-4">Course Content</h5>
+            <div id="lessonList"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyD7I4uIk6ip0QGXTj7kqZ40x3DYGAlC48c",
+        authDomain: "online-learning-1bb9e.firebaseapp.com",
+        projectId: "online-learning-1bb9e",
+        storageBucket: "online-learning-1bb9e.firebasestorage.app",
+        messagingSenderId: "388461824734",
+        appId: "1:388461824734:web:49127c9c4deb01d4fe504f"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const courseId = urlParams.get('id') || "course_1";
+    let currentUser = null;
+    let completedLessons = new Set();
+
+    const lessons = [
+        { id: 1, title: "01. Introduction to the Course", video: "https://www.youtube.com/embed/zJSY8tJY_6A", section: "Basics" },
+        { id: 2, title: "02. Environmental Setup", video: "https://www.youtube.com/embed/w7ejDZ8SWv8", section: "Basics" },
+        { id: 3, title: "03. Core Architecture Logic", video: "https://www.youtube.com/embed/SqcY0GlETPk", section: "Intermediate" },
+        { id: 4, title: "04. Advanced Implementation", video: "https://www.youtube.com/embed/VfGW0QiyqDw", section: "Intermediate" },
+        { id: 5, title: "05. Project Finalization", video: "https://www.youtube.com/embed/dQw4w9WgXcQ", section: "Advanced" }
+    ];
+
+    const quizQuestions = [
+        { q: "What is the primary goal of this course?", options: ["Learning Skills", "Gaming", "Cooking", "Sleeping"], correct: 0 },
+        { q: "Which tool is used for version control?", options: ["Git", "Excel", "Photoshop", "Spotify"], correct: 0 },
+        { q: "Scalability allows a system to...", options: ["Handle growth", "Change color", "Delete files", "None"], correct: 0 },
+        { q: "What does API stand for?", options: ["Application Program Interface", "Apple Pie Ink", "Auto Port Info", "None"], correct: 0 },
+        { q: "Is Firebase a database service?", options: ["Yes", "No", "Maybe", "Only for iOS"], correct: 0 },
+        { q: "HTTPS is more secure than HTTP.", options: ["True", "False"], correct: 0 },
+        { q: "Frontend refers to...", options: ["User Interface", "Server Room", "Database", "Power Cables"], correct: 0 },
+        { q: "Backend usually handles...", options: ["Logic & Databases", "CSS Colors", "Mouse Clicks", "Monitor Brightness"], correct: 0 },
+        { q: "A 'Bug' in programming is...", options: ["An error", "An insect", "A feature", "A virus"], correct: 0 },
+        { q: "Should you test your code?", options: ["Always", "Never", "Sometimes", "Only on Sundays"], correct: 0 }
+    ];
+
+    window.renderLessons = () => {
+        const list = document.getElementById('lessonList');
+        if(!list) return;
+        list.innerHTML = lessons.map((l) => `
+            <div class="lesson-item p-3 d-flex align-items-center justify-content-between" id="lesson_${l.id}" 
+                 onclick="window.setActiveLesson(${l.id})">
+                <div class="d-flex align-items-center">
+                    <div class="form-check me-3">
+                        <input class="form-check-input" type="checkbox" id="check_${l.id}" 
+                               ${completedLessons.has(l.id) ? 'checked' : ''} 
+                               onclick="window.toggleProgress(${l.id}, event)">
+                    </div>
+                    <div>
+                        <div class="small opacity-50 text-uppercase" style="font-size: 0.65rem;">${l.section}</div>
+                        <div class="fw-600" style="font-size: 0.9rem;">${l.title}</div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    };
+
+    window.setActiveLesson = (id) => {
+        const lesson = lessons.find(l => l.id === id);
+        if(!lesson) return;
+        document.getElementById('mainVideo').src = lesson.video;
+        document.getElementById('displayTitle').innerText = lesson.title;
+        document.getElementById('displaySection').innerText = lesson.section;
+        
+        document.querySelectorAll('.lesson-item').forEach(el => el.classList.remove('active'));
+        const activeEl = document.getElementById(`lesson_${id}`);
+        if(activeEl) activeEl.classList.add('active');
+    };
+
+    window.toggleProgress = async (id, event) => {
+        event.stopPropagation();
+        if (event.target.checked) completedLessons.add(id);
+        else completedLessons.delete(id);
+        
+        updateUI();
+
+        if (currentUser) {
+            try {
+                await setDoc(doc(db, "userProgress", currentUser.uid + "_" + courseId), {
+                    completed: Array.from(completedLessons)
+                }, { merge: true });
+            } catch(e) { console.error("Save failed", e); }
+        }
+    };
+
+    function updateUI() {
+        const percent = Math.round((completedLessons.size / lessons.length) * 100);
+        document.getElementById('progressBar').style.width = percent + '%';
+        document.getElementById('progressText').innerText = percent + '%';
+    }
+
+    window.renderQuiz = () => {
+        const container = document.getElementById('quizContainer');
+        if(!container) return;
+        container.innerHTML = quizQuestions.map((q, i) => `
+            <div class="quiz-card" id="card_${i}">
+                <h6 class="mb-3">${i+1}. ${q.q}</h6>
+                ${q.options.map((opt, optIdx) => `
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="q${i}" value="${optIdx}">
+                        <label class="form-check-label ms-2">${opt}</label>
+                    </div>
+                `).join('')}
+                <div id="feedback_${i}" class="mt-2 small fw-bold"></div>
+            </div>
+        `).join('');
+    };
+
+    window.submitQuiz = () => {
+        let score = 0;
+        quizQuestions.forEach((q, i) => {
+            const selected = document.querySelector(`input[name="q${i}"]:checked`);
+            const feedback = document.getElementById(`feedback_${i}`);
+            const card = document.getElementById(`card_${i}`);
+            if (selected && parseInt(selected.value) === q.correct) {
+                score++;
+                feedback.innerHTML = "<span class='text-success'>Correct!</span>";
+                card.style.borderColor = "#198754";
+            } else {
+                feedback.innerHTML = `<span class='text-danger'>Incorrect.</span>`;
+                card.style.borderColor = "#dc3545";
+            }
+        });
+        const percent = (score / quizQuestions.length) * 100;
+        document.getElementById('quizResultArea').innerHTML = `
+            <div class="alert ${percent >= 80 ? 'alert-success' : 'alert-danger'} text-center">
+                <h3>Your Score: ${percent}%</h3>
+                <p>${score} out of ${quizQuestions.length} correct</p>
+            </div>
+        `;
+    };
+
+    // --- INITIALIZATION ---
+    // Render immediately so it shows even if Firebase is slow
+    window.renderLessons();
+    window.renderQuiz();
+    window.setActiveLesson(1);
+
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            currentUser = user;
+            try {
+                const docSnap = await getDoc(doc(db, "userProgress", user.uid + "_" + courseId));
+                if (docSnap.exists()) {
+                    completedLessons = new Set(docSnap.data().completed);
+                    updateUI();
+                    window.renderLessons(); // Re-render to show checkboxes
+                }
+            } catch(e) { console.log("User not logged in or Firebase blocked"); }
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduStream Elite | Professional Learning</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+
+    <style>
+        :root { 
+            --primary: #2563eb; 
+            --bg-light: #ffffff;
+            --soft-gray: #f8fafc;
+            --text-dark: #0f172a;
+            --gold: #b5935a;
+        }
+        
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: var(--bg-light); 
+            color: var(--text-dark);
+            overflow-x: hidden;
+            padding-top: 100px; /* FIX: prevent navbar overlap */
+        }
+
+        /* Glassmorphism Navbar */
+        .navbar {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding: 20px 0;
+            transition: 0.3s;
+        }
+
+        /* Auto-Slide Hero Section */
+        .hero-container {
+            position: relative;
+            height: 90vh;
+            width: 100%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            background: #f1f5f9;
+        }
+
+        .hero-bg-slider {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+        }
+
+        .hero-slide {
+            position: absolute; width: 100%; height: 100%;
+            background-size: cover; background-position: center;
+            opacity: 0; transition: opacity 1.5s ease;
+        }
+
+        .hero-slide.active { opacity: 0.35; }
+
+        .hero-overlay {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+        }
+
+        /* Premium Course Cards */
+        .course-card {
+            border: none;
+            background: #fff;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        .course-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.1);
+        }
+
+        .card-badge {
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 0.75rem;
+            padding: 5px 12px;
+            border-radius: 100px;
+        }
+
+        /* Elite Certificate UI */
+        .cert-container {
+            background: #fff;
+            padding: 60px;
+            border: 1px solid #e2e8f0;
+            position: relative;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.1);
+        }
+
+        .cert-border {
+            border: 2px solid var(--gold);
+            padding: 40px;
+            height: 100%;
+        }
+
+        .cert-header { 
+            font-family: 'Playfair Display', serif; 
+            color: var(--gold); 
+            letter-spacing: 4px; 
+        }
+
+        .cert-seal {
+            width: 90px; height: 90px;
+            background: var(--gold);
+            border-radius: 50%;
+            margin: 30px auto;
+            color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem;
+            box-shadow: 0 10px 20px rgba(181, 147, 90, 0.3);
+        }
+
+        /* Rich Footer */
+        footer {
+            background: var(--soft-gray);
+            padding: 100px 0 50px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .footer-heading { 
+            font-weight: 800; 
+            font-size: 0.9rem; 
+            letter-spacing: 1px; 
+            color: #64748b; 
+            margin-bottom: 25px; 
+        }
+
+        .footer-link { 
+            color: #475569; 
+            text-decoration: none; 
+            font-size: 0.95rem; 
+            display: block; 
+            margin-bottom: 12px; 
+            transition: 0.2s; 
+        }
+
+        .footer-link:hover { color: var(--primary); }
+
+        .btn-premium {
+            padding: 14px 32px;
+            border-radius: 14px;
+            font-weight: 700;
+            transition: 0.3s;
+        }
+
+        @media (max-width: 992px){
+            body { padding-top: 85px; }
+        }
+
+        @media (max-width: 768px) {
+            .hero-container {
+                height: auto;
+                padding: 120px 0 80px;
+                text-align: center;
+            }
+
+            .hero-overlay h1 {
+                font-size: 2rem !important;
+                line-height: 1.3;
+            }
+
+            .hero-overlay p {
+                font-size: 0.95rem;
+            }
+
+            .hero-overlay .d-flex {
+                flex-direction: column;
+            }
+
+            .hero-overlay .btn {
+                width: 100%;
+            }
+
+            .cert-container { padding: 20px; }
+            .cert-border { padding: 20px; }
+
+            .row.align-items-center.bg-white.p-5 {
+                padding: 25px !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<nav class="navbar navbar-expand-lg fixed-top">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-dark fs-3" href="index.html">
+            EDU<span class="text-primary">STREAM</span>
+        </a>
+
+        <button class="navbar-toggler border-0" type="button" 
+            data-bs-toggle="collapse" 
+            data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav mx-auto text-center">
+                <li class="nav-item"><a class="nav-link fw-semibold px-3" href="#courses">Courses</a></li>
+                <li class="nav-item"><a class="nav-link fw-semibold px-3" href="#" onclick="showEnterprise()">Enterprise</a></li>
+                <li class="nav-item"><a class="nav-link fw-semibold px-3" href="contact.html">Contact Us</a></li>
+            </ul>
+
+            <div id="navActions" class="d-flex gap-2 justify-content-center mt-3 mt-lg-0">
+                <a href="auth.html" class="btn text-dark fw-bold">Login</a>
+                <a href="auth.html" class="btn btn-primary btn-premium shadow-sm">Join for Free</a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<header class="hero-container">
+    <div class="hero-bg-slider">
+        <div class="hero-slide active" style="background-image: url('https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=2070')"></div>
+        <div class="hero-slide" style="background-image: url('https://images.unsplash.com/photo-1531482615713-2afd69097998?q=80&w=2070')"></div>
+        <div class="hero-slide" style="background-image: url('https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=2070')"></div>
+    </div>
+    <div class="hero-overlay container text-center">
+        <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary px-3 py-2 mb-4">New: Generative AI Certification</span>
+        <h1 class="display-2 fw-bold mb-4">Advance your career <br>with <span class="text-primary">Global Experts.</span></h1>
+        <p class="lead text-muted mb-5 mx-auto" style="max-width: 700px;">Experience a world-class education designed to get you hired. High-fidelity courses with industry-recognized certifications.</p>
+        <div class="d-flex justify-content-center gap-3">
+            <button class="btn btn-dark btn-premium" onclick="scrollToCourses()">Browse Courses</button>
+            <button class="btn btn-outline-dark btn-premium" onclick="showCertificateDemo()">View Credentials</button>
+        </div>
+    </div>
+</header>
+
+<section id="courses" class="py-5 bg-white">
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-end mb-5">
+            <div>
+                <h2 class="fw-bold display-6">Featured Courses</h2>
+                <p class="text-muted">Join 50k+ professionals learning high-demand skills.</p>
+            </div>
+            <a href="courses.html" class="btn btn-outline-primary rounded-pill px-4">See All</a>
+        </div>
+        
+        <div class="row g-4" id="courseGrid"></div>
+    </div>
+</section>
+
+<section class="py-5" style="background: #fdfdfd;">
+    <div class="container py-5">
+        <div class="row align-items-center bg-white p-5 rounded-5 shadow-sm border">
+            <div class="col-lg-6">
+                <h2 class="fw-bold mb-4">Ready to start your <br><span class="text-primary">3-Day Free Trial?</span></h2>
+                <ul class="list-unstyled">
+                    <li class="mb-3"><i class="bi bi-check-circle-fill text-primary me-3"></i> Unlimited access to 4,000+ courses</li>
+                    <li class="mb-3"><i class="bi bi-check-circle-fill text-primary me-3"></i> Professional verified certificates</li>
+                    <li class="mb-3"><i class="bi bi-check-circle-fill text-primary me-3"></i> Download lessons for offline learning</li>
+                </ul>
+            </div>
+            <div class="col-lg-6 text-center">
+                <div class="p-4 bg-light rounded-4">
+                    <p class="mb-1 text-muted">Starting at</p>
+                    <h2 class="display-4 fw-bold mb-4">$19<span class="fs-5 fw-normal">/mo</span></h2>
+                    <a href="auth.html" class="btn btn-primary btn-premium w-100">Claim My Free Trial</a>
+                    <p class="small text-muted mt-3">Cancel anytime. No upfront payment.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <div class="container">
+        <div class="row g-5">
+            <div class="col-lg-4">
+                <a class="navbar-brand fw-bold text-dark fs-3" href="#">EDU<span class="text-primary">STREAM</span></a>
+                <p class="text-muted mt-4 pe-lg-5">Empowering professionals through high-impact technical education. Join our global community today.</p>
+            </div>
+            <div class="col-6 col-md-2">
+                <h6 class="footer-heading">PLATFORM</h6>
+                <a href="courses.html" class="footer-link">Browse Courses</a>
+                <a href="#" class="footer-link" onclick="showCertificateDemo()">Certifications</a>
+                <a href="support.html" class="footer-link">Support Center</a> </div>
+            <div class="col-6 col-md-2">
+                <h6 class="footer-heading">COMPANY</h6>
+                <a href="#" class="footer-link" onclick="showEnterprise()">Enterprise</a>
+                <a href="contact.html" class="footer-link">Contact Us</a>
+                <a href="privacy.html" class="footer-link">Privacy Policy</a> </div>
+            <div class="col-md-4">
+                <h6 class="footer-heading">NEWSLETTER</h6>
+                <p class="small text-muted">Monthly career tips and new course announcements.</p>
+                <div class="input-group">
+                    <input type="text" class="form-control border-end-0" placeholder="Email Address">
+                    <button class="btn btn-primary px-4">Join</button>
+                </div>
+            </div>
+        </div>
+        <hr class="my-5 opacity-10">
+        <div class="text-center text-muted small">© 2026 EduStream Elite Academy. All Rights Reserved.</div>
+    </div>
+</footer>
+
+<div class="modal fade" id="contentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 overflow-hidden">
+            <div id="modalBody"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyD7I4uIk6ip0QGXTj7kqZ40x3DYGAlC48c",
+        authDomain: "online-learning-1bb9e.firebaseapp.com",
+        projectId: "online-learning-1bb9e",
+        storageBucket: "online-learning-1bb9e.firebasestorage.app",
+        messagingSenderId: "388461824734",
+        appId: "1:388461824734:web:49127c9c4deb01d4fe504f"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.hero-slide');
+    setInterval(() => {
+        if(slides.length > 0) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide + 1) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }
+    }, 5000);
+
+    const courses = [
+        { id: 1, category: "Engineering", title: "Full-Stack Web Architecture", instructor: "David Miller", price: "199", img: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600" },
+        { id: 2, category: "Data Science", title: "Applied AI & Neural Networks", instructor: "Dr. Elena Rossi", price: "249", img: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600" },
+        { id: 3, category: "Design", title: "Advanced Product Psychology", instructor: "James Chen", price: "149", img: "https://images.unsplash.com/photo-1586717791821-3f44a563eb4c?w=600" }
+    ];
+
+    window.scrollToCourses = () => document.getElementById('courses').scrollIntoView({behavior: 'smooth'});
+
+    window.renderGrid = () => {
+        const grid = document.getElementById('courseGrid');
+        if(!grid) return;
+        
+        grid.innerHTML = courses.map(c => `
+            <div class="col-md-4">
+                <div class="course-card h-100 p-4">
+                    <img src="${c.img}" class="img-fluid rounded-4 mb-3" style="height: 200px; width: 100%; object-fit: cover;">
+                    <span class="card-badge">${c.category}</span>
+                    <h5 class="fw-bold mt-3 mb-2">${c.title}</h5>
+                    <p class="text-muted small">Course by ${c.instructor}</p>
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <span class="fw-bold fs-4">$${c.price}</span>
+                        <button class="btn btn-outline-dark btn-sm rounded-pill px-3" onclick="showCourse(${c.id})">Details</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    };
+
+    window.showCourse = (id) => {
+        const c = courses.find(x => x.id === id);
+        document.getElementById('modalBody').innerHTML = `
+            <div class="modal-body p-5">
+                <div class="row g-4">
+                    <div class="col-md-7">
+                        <h2 class="fw-bold">${c.title}</h2>
+                        <p class="text-muted">Master this curriculum from beginning to end with live mentoring.</p>
+                        <h6 class="fw-bold mt-4">Syllabus Overview</h6>
+                        <div class="accordion accordion-flush" id="syllabus">
+                            <div class="accordion-item"><div class="accordion-header small fw-bold py-2 border-bottom">Chapter 1: The Fundamentals</div></div>
+                            <div class="accordion-item"><div class="accordion-header small fw-bold py-2 border-bottom">Chapter 2: Advanced Core Logic</div></div>
+                            <div class="accordion-item"><div class="accordion-header small fw-bold py-2 border-bottom">Chapter 3: Final Industry Project</div></div>
+                        </div>
+                    </div>
+                    <div class="col-md-5 bg-light p-4 rounded-4">
+                        <div class="ratio ratio-16x9 mb-3"><iframe src="https://www.youtube.com/embed/SJpUuVunp0A"></iframe></div>
+                        <ul class="list-unstyled small mb-4">
+                            <li><i class="bi bi-star me-2"></i> Q&A Access</li>
+                            <li><i class="bi bi-award me-2"></i> Verified Certificate</li>
+                        </ul>
+                        <button class="btn btn-primary w-100 btn-premium" onclick="window.location.href='course-player.html?id=${c.id}'">Enroll Now ($${c.price})</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        new bootstrap.Modal('#contentModal').show();
+    };
+
+    window.showCertificateDemo = () => {
+        document.getElementById('modalBody').innerHTML = `
+            <div class="modal-body p-5 bg-white">
+                <div class="cert-container">
+                    <div class="cert-border text-center">
+                        <h3 class="cert-header">CERTIFICATE</h3>
+                        <p class="mt-4 text-muted">This certifies the successful completion of</p>
+                        <h1 class="fw-bold my-3" style="font-family: 'Playfair Display'">Professional Graduate</h1>
+                        <p class="mb-4">issued by EduStream Global Academy in coordination with industry partners.</p>
+                        <div class="cert-seal"><i class="bi bi-patch-check"></i></div>
+                        <div class="row mt-5 text-muted small">
+                            <div class="col-6 border-top pt-2">REGISTRAR SIGNATURE</div>
+                            <div class="col-6 border-top pt-2">DATE OF ISSUE</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        new bootstrap.Modal('#contentModal').show();
+    };
+
+    window.showEnterprise = () => {
+         document.getElementById('modalBody').innerHTML = `
+            <div class="modal-body p-5 text-center">
+                <h2 class="fw-bold">Enterprise Solutions</h2>
+                <p class="text-muted">Scale your team's skills with EduStream Business.</p>
+                <button class="btn btn-primary btn-premium mt-4 px-5">Get a Quote</button>
+            </div>
+        `;
+        new bootstrap.Modal('#contentModal').show();
+    };
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            document.getElementById('navActions').innerHTML = `<a href="dashboard.html" class="btn btn-primary btn-premium shadow-sm">Dashboard</a>`;
+        } else {
+            document.getElementById('navActions').innerHTML = `
+                <a href="auth.html" class="btn text-dark fw-bold">Login</a>
+                <a href="auth.html" class="btn btn-primary btn-premium shadow-sm">Join for Free</a>
+            `;
+        }
+    });
+
+    renderGrid();
+</script>
+
+</body>
+</html>

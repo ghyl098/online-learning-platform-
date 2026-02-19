@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduStream Pro | Full Enterprise LMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root { --sidebar-width: 260px; --primary: #2563eb; --dark: #0f172a; --light-bg: #f8fafc; }
+        body { background-color: var(--light-bg); font-family: 'Inter', sans-serif; margin: 0; overflow-x: hidden; }
+
+        #sidebar { width: var(--sidebar-width); background: var(--dark); min-height: 100vh; position: fixed; z-index: 1000; transition: 0.3s; }
+        .main-content { margin-left: var(--sidebar-width); min-height: 100vh; padding-bottom: 50px; transition: 0.3s; }
+        
+        .nav-link { 
+            color: #94a3b8; padding: 12px 20px; border-radius: 10px; margin: 4px 15px; 
+            border: none; background: transparent; text-align: left; display: flex; 
+            align-items: center; width: calc(100% - 30px); transition: 0.2s; font-size: 0.9rem;
+        }
+        .nav-link:hover, .nav-link.active { background: #1e293b; color: white; }
+        .nav-link.active { border-left: 4px solid var(--primary); }
+
+        .glass-card { background: white; border: 1px solid #e2e8f0; border-radius: 15px; overflow: hidden; position: relative; height: 100%; transition: 0.3s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .glass-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .course-img { height: 160px; object-fit: cover; width: 100%; border-bottom: 1px solid #f1f5f9; }
+        .category-badge { position: absolute; top: 12px; left: 12px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; padding: 5px 10px; border-radius: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 5; }
+        
+        .admin-controls { position: absolute; top: 10px; right: 10px; z-index: 10; display: flex; gap: 5px; }
+        .btn-circle { width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: none; cursor: pointer; }
+
+        .player-wrapper { border-radius: 20px; overflow: hidden; background: white; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .curriculum-sidebar { max-height: 700px; overflow-y: auto; background: #fff; border-left: 1px solid #eee; }
+        .lesson-item { cursor: pointer; padding: 12px 15px; font-size: 0.85rem; border-radius: 8px; margin: 4px 10px; transition: 0.2s; border-left: 3px solid transparent; color: #475569; }
+        .lesson-item:hover { background: #f1f5f9; color: var(--primary); }
+
+        /* Course Player Tabs */
+        .player-tabs { display: flex; gap: 15px; border-bottom: 2px solid #f1f5f9; margin-bottom: 20px; }
+        .p-tab { padding: 10px 5px; cursor: pointer; font-weight: 600; color: #94a3b8; border-bottom: 3px solid transparent; }
+        .p-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+        /* Quiz Styling */
+        .quiz-option { border: 1px solid #e2e8f0; padding: 12px; border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: 0.2s; }
+        .quiz-option:hover { background: #f8fafc; border-color: var(--primary); }
+        .quiz-option.selected { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .hidden-view { display: none !important; }
+        .custom-table th { font-size: 0.7rem; text-transform: uppercase; color: #64748b; padding: 15px; }
+        .search-container { max-width: 400px; position: relative; }
+        .search-container i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+        .search-container input { padding-left: 45px; border-radius: 10px; border: 1px solid #e2e8f0; }
+    </style>
+</head>
+<body>
+
+    <nav id="sidebar">
+        <div class="p-4 text-center"> 
+            <a href="index.html" class="text-decoration-none">
+                <h4 class="fw-bold text-white mb-0">EDU<span class="text-primary">STREAM</span></h4>
+            </a>
+            <small class="text-secondary">Enterprise Version</small>
+        </div> 
+        <div class="nav flex-column mt-3">
+            <button class="nav-link active" onclick="showView('overview', this)"><i class="bi bi-grid-1x2 me-3"></i> Dashboard</button>
+            <button class="nav-link" onclick="showView('courses', this)"><i class="bi bi-play-circle me-3"></i> Course Library</button>
+            <button class="nav-link" onclick="showView('routine', this)"><i class="bi bi-calendar3 me-3"></i> Class Routine</button>
+            <button class="nav-link" onclick="showView('results', this)"><i class="bi bi-trophy me-3"></i> Exam Results</button>
+            <button class="nav-link" onclick="showView('fees', this)"><i class="bi bi-wallet2 me-3"></i> Fee Ledger</button>
+
+            <div id="adminPanel" style="display: none;">
+                <hr class="mx-3 border-secondary opacity-25">
+                <p class="px-4 small text-uppercase text-secondary fw-bold" style="font-size: 0.7rem;">Admin Management</p>
+                <button class="nav-link" onclick="showView('admin-manager', this)"><i class="bi bi-shield-lock me-3"></i> Management Center</button>
+                <button class="nav-link" onclick="openCourseModal()"><i class="bi bi-plus-square me-3"></i> Add New Course</button>
+                <button class="nav-link" onclick="showView('users', this)"><i class="bi bi-people me-3"></i> Student Database</button>
+            </div>
+            
+            <button class="nav-link text-danger mt-5" id="logoutBtn"><i class="bi bi-power me-3"></i> Sign Out</button>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <header class="bg-white p-3 shadow-sm d-flex justify-content-between align-items-center px-4 sticky-top">
+            <h5 class="mb-0 fw-bold" id="viewTitle">DASHBOARD</h5>
+            <div class="d-flex align-items-center">
+                <div class="text-end me-3">
+                    <p class="mb-0 fw-bold small" id="displayName">Loading...</p>
+                    <span id="roleBadge" class="badge bg-primary rounded-pill" style="font-size: 0.6rem;">Student</span>
+                </div>
+                <div id="userInitials" class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 38px; height: 38px;">?</div>
+            </div>
+        </header>
+
+        <div class="p-4">
+            <section id="view-overview" class="content-view">
+                <div class="row g-4 mb-4">
+                    <div class="col-md-4"><div class="glass-card p-4 border-start border-primary border-4"><small class="text-muted fw-bold">TOTAL COURSES</small><h2 class="fw-bold mb-0" id="stat-courses">0</h2></div></div>
+                    <div class="col-md-4"><div class="glass-card p-4 border-start border-warning border-4"><small class="text-muted fw-bold">STUDENTS</small><h2 class="fw-bold mb-0 text-warning" id="stat-students">0</h2></div></div>
+                    <div class="col-md-4"><div class="glass-card p-4 border-start border-info border-4"><small class="text-muted fw-bold">GPA</small><h2 class="fw-bold mb-0 text-info">3.92</h2></div></div>
+                </div>
+                <div class="row g-4">
+                    <div class="col-md-8">
+                        <div class="glass-card p-4">
+                            <div class="d-flex justify-content-between mb-4">
+                                <h5 class="fw-bold">Recent Announcements</h5>
+                                <button class="btn btn-sm btn-primary admin-only" id="addNoticeBtn" style="display:none" onclick="openNoticeModal()">Add Notice</button>
+                            </div>
+                            <div id="announcementList" class="list-group list-group-flush"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="view-courses" class="content-view hidden-view">
+                <div id="courseGalleryRoot">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+                        <div class="d-flex gap-2 overflow-auto pb-2" id="categoryFilters">
+                            <button class="btn btn-primary btn-sm rounded-pill px-3" onclick="filterCourses('All', this)">All</button>
+                            <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="filterCourses('Engineering', this)">Engineering</button>
+                            <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="filterCourses('Cybersecurity', this)">Cybersecurity</button>
+                            <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="filterCourses('Data Science', this)">Data Science</button>
+                            <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="filterCourses('UI/UX', this)">UI/UX Design</button>
+                        </div>
+                        <div class="search-container">
+                            <i class="bi bi-search"></i>
+                            <input type="text" class="form-control" id="courseSearch" placeholder="Search courses..." onkeyup="handleSearch()">
+                        </div>
+                    </div>
+                    <div class="row g-4" id="courseGallery"></div>
+                </div>
+
+                <div id="coursePlayer" class="hidden-view">
+                    <button class="btn btn-sm btn-outline-dark mb-3" onclick="closePlayer()"><i class="bi bi-arrow-left"></i> Back to Library</button>
+                    <div class="row g-0 player-wrapper shadow">
+                        <div class="col-lg-8 bg-white">
+                            <div class="bg-black"><div class="ratio ratio-16x9"><iframe id="videoFrame" src="" allowfullscreen></iframe></div></div>
+                            <div class="p-4">
+                                <div class="player-tabs">
+                                    <div class="p-tab active" onclick="switchPlayerTab('info', this)">Course Info</div>
+                                    <div class="p-tab" onclick="switchPlayerTab('practical', this)">Practical Lab</div>
+                                    <div class="p-tab" onclick="switchPlayerTab('quiz', this)">Exam / MCQ</div>
+                                </div>
+
+                                <div id="p-info">
+                                    <h4 id="lessonTitle" class="fw-bold mb-2">Lesson Title</h4>
+                                    <p class="text-muted">Welcome to this module. Below are the key concepts you must master.</p>
+                                    <div class="mt-4">
+                                        <h6 class="fw-bold text-primary">Expected Questions:</h6>
+                                        <ul id="importantQuestions" class="text-secondary small">
+                                            <li>Define the core architecture of this technology.</li>
+                                            <li>What are the top 3 use-cases in modern industry?</li>
+                                            <li>Explain the security vulnerabilities found in this module.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div id="p-practical" class="hidden-view">
+                                    <h5 class="fw-bold">Practical Implementation</h5>
+                                    <div class="alert alert-light border mt-3">
+                                        <h6>Lab Tasks:</h6>
+                                        <ol class="small text-muted">
+                                            <li>Set up the local environment using the course resources.</li>
+                                            <li>Implement the base logic shown in Chapter 4.</li>
+                                            <li>Debug and verify the output against the provided sample.</li>
+                                        </ol>
+                                    </div>
+                                </div>
+
+                                <div id="p-quiz" class="hidden-view">
+                                    <h5 class="fw-bold mb-3">Module Assessment (Real-time Grade)</h5>
+                                    <div id="quizContainer"></div>
+                                    <div id="quizResult" class="mt-4 hidden-view"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 curriculum-sidebar">
+                            <div class="p-3 bg-light fw-bold border-bottom">Chapters (01-10)</div>
+                            <div id="curriculumList"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="view-routine" class="content-view hidden-view"><div class="glass-card p-4" id="routineContent"></div></section>
+            <section id="view-results" class="content-view hidden-view"><div class="glass-card p-4" id="resultsContent"></div></section>
+            <section id="view-fees" class="content-view hidden-view"><div class="glass-card p-4" id="feesContent"></div></section>
+            <section id="view-users" class="content-view hidden-view"><div class="glass-card p-4"><h5 class="fw-bold mb-4">Student Database</h5><div class="table-responsive"><table class="table custom-table"><thead><tr><th>Email</th><th>Status</th></tr></thead><tbody id="userTable"></tbody></table></div></div></section>
+
+            <section id="view-admin-manager" class="content-view hidden-view">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="glass-card p-4">
+                            <h5 class="fw-bold mb-3">Update Student Results</h5>
+                            <input type="email" id="adm_res_email" class="form-control mb-2" placeholder="Student Email">
+                            <textarea id="adm_res_html" class="form-control mb-2" rows="4" placeholder="HTML Table Content"></textarea>
+                            <button class="btn btn-primary w-100" onclick="updateStudentResult()">Publish Result</button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="glass-card p-4">
+                            <h5 class="fw-bold mb-3">Update Fee Amount</h5>
+                            <input type="email" id="adm_fee_email" class="form-control mb-2" placeholder="Student Email">
+                            <div class="row g-2">
+                                <div class="col-6"><input type="number" id="adm_fee_amount" class="form-control" placeholder="Amount"></div>
+                                <div class="col-6"><select id="adm_fee_status" class="form-select"><option value="Unpaid">Unpaid</option><option value="Paid">Paid</option></select></div>
+                            </div>
+                            <button class="btn btn-success w-100 mt-2" onclick="updateStudentFee()">Update Ledger</button>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="glass-card p-4">
+                            <h5 class="fw-bold mb-3">Global Routine Editor</h5>
+                            <textarea id="adm_routine_html" class="form-control mb-3" rows="5"></textarea>
+                            <button class="btn btn-info text-white w-100" onclick="updateGlobalRoutine()">Save Changes</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="modal fade" id="courseModal" tabindex="-1">
+        <div class="modal-dialog"><div class="modal-content">
+            <div class="modal-header bg-dark text-white"><h5 class="modal-title" id="courseModalTitle">Manage Course</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="m_id">
+                <div class="mb-3"><input type="text" id="m_title" class="form-control" placeholder="Course Title"></div>
+                <div class="mb-3"><select id="m_cat" class="form-select">
+                    <option value="Engineering">Engineering</option>
+                    <option value="Data Science">Data Science</option>
+                    <option value="Cybersecurity">Cybersecurity</option>
+                    <option value="UI/UX">UI/UX Design</option>
+                </select></div>
+                <div class="mb-3"><input type="text" id="m_img" class="form-control" placeholder="Image URL"></div>
+                <div class="mb-3"><input type="text" id="m_video" class="form-control" placeholder="YouTube URL"></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-primary w-100" onclick="saveCourse()" id="saveCourseBtn">Save Course</button></div>
+        </div></div>
+    </div>
+
+    <div class="modal fade" id="noticeModal" tabindex="-1">
+        <div class="modal-dialog"><div class="modal-content">
+            <div class="modal-header bg-primary text-white"><h5 class="modal-title">Post Notice</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="mb-3"><input type="text" id="n_title" class="form-control" placeholder="Title"></div>
+                <div class="mb-3"><textarea id="n_text" class="form-control" placeholder="Message"></textarea></div>
+                <div class="mb-3"><select id="n_type" class="form-select"><option value="bg-primary">Info</option><option value="bg-danger">Urgent</option></select></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-primary w-100" onclick="saveNotice()">Post</button></div>
+        </div></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, setDoc, serverTimestamp, query, orderBy, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD7I4uIk6ip0QGXTj7kqZ40x3DYGAlC48c",
+            authDomain: "online-learning-1bb9e.firebaseapp.com",
+            projectId: "online-learning-1bb9e",
+            storageBucket: "online-learning-1bb9e.firebasestorage.app",
+            messagingSenderId: "388461824734",
+            appId: "1:388461824734:web:49127c9c4deb01d4fe504f"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const ADMIN_EMAIL = "ghyalpolama62@gmail.com";
+        let cModal, nModal, currentUser = null;
+        window.allCourses = [];
+        window.userAnswers = {};
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) { window.location.href = "index.html"; return; }
+            currentUser = user;
+            const isAdmin = user.email === ADMIN_EMAIL;
+            window.userRole = isAdmin ? 'admin' : 'student';
+            
+            document.getElementById('displayName').innerText = user.email.split('@')[0].toUpperCase();
+            document.getElementById('userInitials').innerText = user.email[0].toUpperCase();
+            cModal = new bootstrap.Modal(document.getElementById('courseModal'));
+            nModal = new bootstrap.Modal(document.getElementById('noticeModal'));
+
+            if(isAdmin) {
+                document.getElementById('adminPanel').style.display = 'block';
+                document.getElementById('addNoticeBtn').style.display = 'block';
+                document.getElementById('roleBadge').innerText = "Admin";
+            }
+
+            syncCourses();
+            syncNotices(isAdmin);
+            syncUsers();
+            loadStudentData(user.email);
+        });
+
+        // RE-INTEGRATED FUNCTIONS
+        async function loadStudentData(email) {
+            const feeDoc = await getDoc(doc(db, "fees", email));
+            if(feeDoc.exists()){
+                const d = feeDoc.data();
+                document.getElementById('feesContent').innerHTML = `<h5>Fee Ledger</h5><div class="alert alert-info">Amount: NPR ${d.amount} | Status: ${d.status}</div>`;
+            }
+            const resDoc = await getDoc(doc(db, "results", email));
+            if(resDoc.exists()) document.getElementById('resultsContent').innerHTML = `<h5>Results</h5>` + resDoc.data().htmlContent;
+            const routineDoc = await getDoc(doc(db, "routines", "general"));
+            if(routineDoc.exists()) {
+                document.getElementById('routineContent').innerHTML = `<h5>Schedule</h5>` + routineDoc.data().htmlContent;
+                if(window.userRole === 'admin') document.getElementById('adm_routine_html').value = routineDoc.data().htmlContent;
+            }
+        }
+
+        window.updateStudentResult = async () => {
+            await setDoc(doc(db, "results", document.getElementById('adm_res_email').value), { htmlContent: document.getElementById('adm_res_html').value, updatedAt: serverTimestamp() });
+            alert("Result Published");
+        };
+
+        window.updateStudentFee = async () => {
+            await setDoc(doc(db, "fees", document.getElementById('adm_fee_email').value), { amount: document.getElementById('adm_fee_amount').value, status: document.getElementById('adm_fee_status').value, updatedAt: serverTimestamp() });
+            alert("Fee Updated");
+        };
+
+        window.updateGlobalRoutine = async () => {
+            await setDoc(doc(db, "routines", "general"), { htmlContent: document.getElementById('adm_routine_html').value });
+            alert("Routine Updated");
+        };
+
+        function syncCourses() {
+            onSnapshot(query(collection(db, "courses"), orderBy("createdAt", "desc")), (snap) => {
+                window.allCourses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderGallery();
+            });
+        }
+
+        function syncNotices(isAdmin) {
+            onSnapshot(query(collection(db, "notices"), orderBy("createdAt", "desc")), (snap) => {
+                document.getElementById('announcementList').innerHTML = snap.docs.map(d => `
+                    <div class="list-group-item px-0 border-0 mb-3">
+                        <div class="d-flex justify-content-between"><span class="badge ${d.data().type} mb-2">Notice</span>
+                        ${isAdmin ? `<i class="bi bi-trash text-danger" onclick="deleteNotice('${d.id}')" style="cursor:pointer"></i>` : ''}</div>
+                        <h6 class="fw-bold mb-1">${d.data().title}</h6><p class="text-muted small">${d.data().text}</p>
+                    </div>`).join('');
+            });
+        }
+
+        function syncUsers() {
+            onSnapshot(collection(db, "users"), (snap) => {
+                document.getElementById('stat-students').innerText = snap.size;
+                document.getElementById('userTable').innerHTML = snap.docs.map(d => `<tr><td>${d.data().email}</td><td>Active</td></tr>`).join('');
+            });
+        }
+
+        window.renderGallery = (data = window.allCourses) => {
+            document.getElementById('stat-courses').innerText = window.allCourses.length;
+            document.getElementById('courseGallery').innerHTML = data.map(c => `
+                <div class="col-md-4">
+                    <div class="glass-card">
+                        <span class="category-badge bg-primary text-white">${c.category || 'General'}</span>
+                        ${window.userRole === 'admin' ? `
+                            <div class="admin-controls">
+                                <button class="btn-circle bg-warning" onclick="editCourse('${c.id}')"><i class="bi bi-pencil-square"></i></button>
+                                <button class="btn-circle bg-danger text-white" onclick="deleteCourse('${c.id}')"><i class="bi bi-trash"></i></button>
+                            </div>` : ''}
+                        <img src="${c.img || 'https://via.placeholder.com/400'}" class="course-img">
+                        <div class="p-3">
+                            <h6 class="fw-bold mb-3">${c.title}</h6>
+                            <button onclick="openPlayer('${c.id}')" class="btn btn-sm btn-dark w-100 rounded-pill">Watch Course</button>
+                        </div>
+                    </div>
+                </div>`).join('');
+        };
+
+        window.openPlayer = (id) => {
+            const c = window.allCourses.find(x => x.id === id);
+            window.activeCourseId = id;
+            document.getElementById('courseGalleryRoot').classList.add('hidden-view');
+            document.getElementById('coursePlayer').classList.remove('hidden-view');
+            document.getElementById('videoFrame').src = c.video;
+            document.getElementById('lessonTitle').innerText = c.title;
+
+            // Generate Chapters
+            let list = "";
+            for(let i=1; i<=10; i++) list += `<div class="p-3 border-bottom small lesson-item">${i}. Module Introduction & Deep Dive</div>`;
+            document.getElementById('curriculumList').innerHTML = list;
+
+            // Load Assessment
+            window.currentQuiz = [
+                { q: "What is the primary architectural style here?", opts: ["Monolithic", "Microservices", "Serverless", "Event-driven"], a: 1 },
+                { q: "Which tool is best for this implementation?", opts: ["VS Code", "Sublime", "Eclipse", "IntelliJ"], a: 0 },
+                { q: "What is the industry standard pass grade?", opts: ["40%", "60%", "80%", "100%"], a: 2 },
+                { q: "Who is the primary audience for this course?", opts: ["Beginners", "Experts", "Managers", "All"], a: 3 }
+            ];
+            renderQuiz();
+        };
+
+        function renderQuiz() {
+            let html = "";
+            window.currentQuiz.forEach((q, idx) => {
+                html += `<div class="mb-4"><h6>Q${idx+1}: ${q.q}</h6>`;
+                q.opts.forEach((opt, oidx) => {
+                    html += `<div class="quiz-option" onclick="selectOption(${idx}, ${oidx}, this)" data-q="${idx}">${opt}</div>`;
+                });
+                html += `</div>`;
+            });
+            html += `<button class="btn btn-primary w-100" onclick="submitQuiz()">Submit & Save Grade</button>`;
+            document.getElementById('quizContainer').innerHTML = html;
+            window.userAnswers = {};
+        }
+
+        window.selectOption = (qidx, oidx, el) => {
+            document.querySelectorAll(`.quiz-option[data-q="${qidx}"]`).forEach(b => b.classList.remove('selected'));
+            el.classList.add('selected');
+            window.userAnswers[qidx] = oidx;
+        };
+
+        window.submitQuiz = async () => {
+            let score = 0;
+            window.currentQuiz.forEach((q, i) => { if(window.userAnswers[i] === q.a) score++; });
+            const percent = (score / window.currentQuiz.length) * 100;
+            const resDiv = document.getElementById('quizResult');
+            resDiv.classList.remove('hidden-view');
+            resDiv.innerHTML = `<div class="alert ${percent >= 80 ? 'alert-success' : 'alert-danger'}">Score: ${percent.toFixed(0)}% - ${percent >= 80 ? 'Passed' : 'Fail'}</div>`;
+
+            // SAVE TO DATABASE
+            await addDoc(collection(db, "quiz_results"), {
+                student: currentUser.email,
+                courseId: window.activeCourseId,
+                score: percent,
+                timestamp: serverTimestamp()
+            });
+        };
+
+        window.switchPlayerTab = (tab, btn) => {
+            ['info', 'practical', 'quiz'].forEach(t => document.getElementById(`p-${t}`).classList.add('hidden-view'));
+            document.getElementById(`p-${tab}`).classList.remove('hidden-view');
+            document.querySelectorAll('.p-tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+        };
+
+        // UI & FILTER LOGIC
+        window.filterCourses = (filter, btn) => {
+            const data = filter === 'All' ? window.allCourses : window.allCourses.filter(c => c.category === filter);
+            renderGallery(data);
+            document.querySelectorAll('#categoryFilters .btn').forEach(b => b.classList.replace('btn-primary', 'btn-outline-secondary'));
+            btn.classList.replace('btn-outline-secondary', 'btn-primary');
+        };
+
+        window.handleSearch = () => {
+            const term = document.getElementById('courseSearch').value.toLowerCase();
+            renderGallery(window.allCourses.filter(c => c.title.toLowerCase().includes(term)));
+        };
+
+        window.showView = (v, btn) => {
+            document.querySelectorAll('.content-view').forEach(view => view.classList.add('hidden-view'));
+            document.getElementById(`view-${v}`).classList.remove('hidden-view');
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            if(btn) btn.classList.add('active');
+        };
+
+        window.saveCourse = async () => {
+            const id = document.getElementById('m_id').value;
+            const data = { title: document.getElementById('m_title').value, category: document.getElementById('m_cat').value, img: document.getElementById('m_img').value, video: document.getElementById('m_video').value, updatedAt: serverTimestamp() };
+            id ? await updateDoc(doc(db, "courses", id), data) : await addDoc(collection(db, "courses"), { ...data, createdAt: serverTimestamp() });
+            cModal.hide();
+        };
+
+        window.editCourse = (id) => {
+            const c = window.allCourses.find(x => x.id === id);
+            document.getElementById('m_id').value = c.id;
+            document.getElementById('m_title').value = c.title;
+            document.getElementById('m_cat').value = c.category;
+            document.getElementById('m_img').value = c.img;
+            document.getElementById('m_video').value = c.video;
+            cModal.show();
+        };
+
+        window.deleteCourse = async (id) => { if(confirm('Delete?')) await deleteDoc(doc(db, "courses", id)); };
+        window.saveNotice = async () => { await addDoc(collection(db, "notices"), { title: document.getElementById('n_title').value, text: document.getElementById('n_text').value, type: document.getElementById('n_type').value, createdAt: serverTimestamp() }); nModal.hide(); };
+        window.deleteNotice = async (id) => { if(confirm('Delete?')) await deleteDoc(doc(db, "notices", id)); };
+        window.closePlayer = () => { document.getElementById('coursePlayer').classList.add('hidden-view'); document.getElementById('courseGalleryRoot').classList.remove('hidden-view'); document.getElementById('videoFrame').src = ""; };
+        window.openCourseModal = () => { document.getElementById('m_id').value = ""; cModal.show(); };
+        window.openNoticeModal = () => nModal.show();
+        document.getElementById('logoutBtn').onclick = () => signOut(auth);
+    </script>
+</body>
+</html>
