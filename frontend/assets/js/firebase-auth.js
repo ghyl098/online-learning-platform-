@@ -11,7 +11,7 @@ import {
 // ADDED FIRESTORE IMPORTS
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// 1. Firebase Configuration
+// 1. Firebase Configuration (Timro original config)
 const firebaseConfig = {
     apiKey: "AIzaSyD7I4uIk6ip0QGXTj7kqZ40x3DYGAlC48c",
     authDomain: "online-learning-1bb9e.firebaseapp.com",
@@ -24,10 +24,10 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app); // INITIALIZED FIRESTORE
+const db = getFirestore(app); 
 const provider = new GoogleAuthProvider();
 
-// --- 2. AUTH OBSERVER (UPDATED TO PROTECT COURSE PLAYER) ---
+// --- 2. AUTH OBSERVER ---
 onAuthStateChanged(auth, (user) => {
     const authArea = document.getElementById('navAuthArea');
     
@@ -44,7 +44,6 @@ onAuthStateChanged(auth, (user) => {
         }
     }
 
-    // Protect Dashboard & Learning Pages
     const path = window.location.pathname.toLowerCase();
     const protectedPages = ["dashboard.html", "attendance.html", "course-player.html"];
     const isProtectedRoute = protectedPages.some(page => path.includes(page));
@@ -54,7 +53,7 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// --- 3. PROGRESS & QUIZ TRACKING (NEW SECTION) ---
+// --- 3. PROGRESS & QUIZ TRACKING ---
 export async function saveUserProgress(userId, courseId, completedList, quizScore = null) {
     try {
         const data = {
@@ -86,7 +85,6 @@ signupForm?.addEventListener('submit', async (e) => {
 
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        // We await the sync so the role is set before we move to dashboard
         await syncWithFlask(userCredential.user, name);
         window.location.href = "dashboard.html"; 
     } catch (error) {
@@ -95,7 +93,7 @@ signupForm?.addEventListener('submit', async (e) => {
     }
 });
 
-// --- 5. LOGIN LOGIC ---
+// --- 5. LOGIN LOGIC (Fix for your manual login) ---
 const loginForm = document.getElementById('loginForm');
 loginForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -154,7 +152,6 @@ async function syncWithFlask(user, customName = null) {
         localStorage.setItem('userRole', data.role);
     } catch (err) {
         console.error("Flask Sync Failed:", err);
-        // Fallback: If Flask fails, we set a default role so the dashboard doesn't crash
         localStorage.setItem('userRole', 'student');
     }
 }

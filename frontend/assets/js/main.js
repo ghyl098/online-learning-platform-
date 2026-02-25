@@ -12,24 +12,32 @@ let allCourses = [
 let currentSearch = "";
 let currentCategory = "All";
 
-// --- BACKEND SYNC (ADDED SUPPORT) ---
+// --- BACKEND SYNC (FIXED FOR CONTINUOUS LOADING) ---
 async function syncWithBackend() {
     try {
         const res = await fetch('http://127.0.0.1:5000/api/courses');
+        if (!res.ok) throw new Error("Backend not responding");
+        
         const backendData = await res.json();
+        
         if (backendData.length > 0) {
             // Backend bata naya data ayo bhane static data sanga merge garne
             const formatted = backendData.map(c => ({
                 id: c.id,
-                category: "Professional",
+                category: c.category || "Professional",
                 title: c.title,
-                instructor: "Expert Instructor",
-                price: "Premium",
-                img: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600"
+                instructor: c.instructor || "Expert Instructor",
+                price: c.price || "Premium",
+                img: c.img || "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600"
             }));
-            allCourses = [...allCourses, ...formatted];
-            renderFeatured();
-            renderFullCatalog();
+            
+            // Merge static and backend data, then remove duplicates by ID
+            const combined = [...allCourses, ...formatted];
+            allCourses = Array.from(new Map(combined.map(item => [item.id, item])).values());
+
+            // Re-render based on current page
+            if (document.getElementById('courseGrid')) renderFeatured();
+            if (document.getElementById('courseList')) renderFullCatalog();
         }
     } catch (e) {
         console.log("Backend offline chha, using static code only.");
@@ -127,7 +135,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const filterBadges = document.querySelectorAll('.filter-badge');
         filterBadges.forEach(badge => {
             badge.addEventListener('click', function() {
-                // Update active visual state
                 filterBadges.forEach(b => {
                     b.classList.remove('active', 'btn-primary');
                     b.classList.add('btn-outline-primary');
@@ -135,7 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.classList.add('active', 'btn-primary');
                 this.classList.remove('btn-outline-primary');
 
-                // Update category and re-render
                 currentCategory = this.getAttribute('data-category') || "All";
                 renderFullCatalog();
             });

@@ -359,13 +359,17 @@
         }
     }, 5000);
 
-    // LIVE DATABASE FETCH LOGIC
+    // --- DYNAMIC URL FIX FOR PRODUCTION ---
+    const BASE_URL = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
+        ? 'http://127.0.0.1:5000'
+        : 'https://online-learning-platform-red.vercel.app'; 
+
     let courses = [];
 
     async function fetchLiveCourses() {
         try {
-            // Flask Backend bata data line
-            const response = await fetch('http://127.0.0.1:5000/api/courses');
+            // Updated to use dynamic BASE_URL instead of hardcoded localhost
+            const response = await fetch(`${BASE_URL}/api/courses`);
             courses = await response.json();
             renderGrid();
         } catch (error) {
