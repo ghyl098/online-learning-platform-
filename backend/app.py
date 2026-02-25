@@ -11,28 +11,35 @@ CORS(app)
 basedir = os.path.abspath(os.path.dirname(__file__))
 instance_path = os.path.join(basedir, 'instance')
 
-# Instance folder chaina vane banaune (Yesle error prevent garchha)
+# Instance folder chaina vane banaune
 if not os.path.exists(instance_path):
     os.makedirs(instance_path)
 
-# Database path (sqlite:///) - create nahudai ma kehi hunna
+# Database path
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(instance_path, 'database.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # --- FIREBASE SETUP ---
+# Vercel ma folder structure ali farak huna sakcha, tesailai yo logic thapिएको cha
 cred_path = os.path.join(basedir, 'serviceAccountKey.json')
 
 if not firebase_admin._apps:
     try:
-        cred = credentials.Certificate(cred_path)
-        firebase_admin.initialize_app(cred)
+        # File exist garchha ki nai check garne
+        if os.path.exists(cred_path):
+            cred = credentials.Certificate(cred_path)
+            firebase_admin.initialize_app(cred)
+        else:
+            # Yedi backend folder vitra khojda bhetena vane, sidhai base path use garne
+            alt_path = "serviceAccountKey.json" 
+            cred = credentials.Certificate(alt_path)
+            firebase_admin.initialize_app(cred)
     except Exception as e:
         print(f"Firebase Key Error: {e}")
 
 db = firestore.client()
 
-# --- ADMIN FIX ROUTE (ADDED) ---
-# Yo link browse garepachhi timro account Admin hunchha
+# --- ADMIN FIX ROUTE ---
 @app.route('/api/make-me-admin')
 def make_me_admin():
     target_email = "ghyalpolama62@gmail.com"
@@ -48,7 +55,7 @@ def make_me_admin():
         if found:
             return jsonify({"status": "success", "message": f"{target_email} is now an Admin!"})
         else:
-            return jsonify({"status": "error", "message": "User not found in Firestore. Make sure you have signed up first."}), 404
+            return jsonify({"status": "error", "message": "User not found in Firestore."}), 404
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
