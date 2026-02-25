@@ -1,5 +1,5 @@
-// 1. Unified Course Data
-const allCourses = [
+// 1. Unified Course Data (YOUR ORIGINAL DATA)
+let allCourses = [
     { id: 1, category: "Engineering", title: "Full-Stack Web Architecture", instructor: "David Miller", price: "199", img: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600" },
     { id: 2, category: "Data Science", title: "Applied AI & Neural Networks", instructor: "Dr. Elena Rossi", price: "249", img: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600" },
     { id: 3, category: "Design", title: "Advanced Product Psychology", instructor: "James Chen", price: "149", img: "https://images.unsplash.com/photo-1586717791821-3f44a563eb4c?w=600" },
@@ -11,6 +11,30 @@ const allCourses = [
 // 2. Global State for Filters (used in courses.html)
 let currentSearch = "";
 let currentCategory = "All";
+
+// --- BACKEND SYNC (ADDED SUPPORT) ---
+async function syncWithBackend() {
+    try {
+        const res = await fetch('http://127.0.0.1:5000/api/courses');
+        const backendData = await res.json();
+        if (backendData.length > 0) {
+            // Backend bata naya data ayo bhane static data sanga merge garne
+            const formatted = backendData.map(c => ({
+                id: c.id,
+                category: "Professional",
+                title: c.title,
+                instructor: "Expert Instructor",
+                price: "Premium",
+                img: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600"
+            }));
+            allCourses = [...allCourses, ...formatted];
+            renderFeatured();
+            renderFullCatalog();
+        }
+    } catch (e) {
+        console.log("Backend offline chha, using static code only.");
+    }
+}
 
 // 3. Function: Render Full Catalog (For courses.html)
 function renderFullCatalog() {
@@ -117,4 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
+
+    // Start sync with Flask backend
+    syncWithBackend();
 });

@@ -273,9 +273,24 @@
         window.allCourses = [];
         window.userAnswers = {};
 
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (!user) { window.location.href = "index.html"; return; }
             currentUser = user;
+            
+            // --- SYNC WITH FLASK BACKEND ON LOGIN ---
+            // Register user in SQLite Database via Flask
+            try {
+                await fetch('http://127.0.0.1:5000/api/register-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        uid: user.uid,
+                        username: user.email.split('@')[0],
+                        email: user.email
+                    })
+                });
+            } catch (e) { console.warn("Flask backend not connected."); }
+
             const isAdmin = user.email === ADMIN_EMAIL;
             window.userRole = isAdmin ? 'admin' : 'student';
             
@@ -380,12 +395,10 @@
             document.getElementById('videoFrame').src = c.video;
             document.getElementById('lessonTitle').innerText = c.title;
 
-            // Generate Chapters
             let list = "";
             for(let i=1; i<=10; i++) list += `<div class="p-3 border-bottom small lesson-item">${i}. Module Introduction & Deep Dive</div>`;
             document.getElementById('curriculumList').innerHTML = list;
 
-            // Load Assessment
             window.currentQuiz = [
                 { q: "What is the primary architectural style here?", opts: ["Monolithic", "Microservices", "Serverless", "Event-driven"], a: 1 },
                 { q: "Which tool is best for this implementation?", opts: ["VS Code", "Sublime", "Eclipse", "IntelliJ"], a: 0 },
@@ -423,7 +436,6 @@
             resDiv.classList.remove('hidden-view');
             resDiv.innerHTML = `<div class="alert ${percent >= 80 ? 'alert-success' : 'alert-danger'}">Score: ${percent.toFixed(0)}% - ${percent >= 80 ? 'Passed' : 'Fail'}</div>`;
 
-            // SAVE TO DATABASE
             await addDoc(collection(db, "quiz_results"), {
                 student: currentUser.email,
                 courseId: window.activeCourseId,
@@ -439,7 +451,6 @@
             btn.classList.add('active');
         };
 
-        // UI & FILTER LOGIC
         window.filterCourses = (filter, btn) => {
             const data = filter === 'All' ? window.allCourses : window.allCourses.filter(c => c.category === filter);
             renderGallery(data);
@@ -457,12 +468,29 @@
             document.getElementById(`view-${v}`).classList.remove('hidden-view');
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             if(btn) btn.classList.add('active');
+            document.getElementById('viewTitle').innerText = v.toUpperCase();
         };
 
         window.saveCourse = async () => {
             const id = document.getElementById('m_id').value;
             const data = { title: document.getElementById('m_title').value, category: document.getElementById('m_cat').value, img: document.getElementById('m_img').value, video: document.getElementById('m_video').value, updatedAt: serverTimestamp() };
+            
+            // 1. SAVE TO FIREBASE
             id ? await updateDoc(doc(db, "courses", id), data) : await addDoc(collection(db, "courses"), { ...data, createdAt: serverTimestamp() });
+            
+            // 2. SAVE TO FLASK (SQLITE) - Optional Sync
+            try {
+                await fetch('http://127.0.0.1:5000/api/courses', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: data.title,
+                        description: data.category,
+                        video_url: data.video
+                    })
+                });
+            } catch (e) { console.log("Flask sync skipped."); }
+
             cModal.hide();
         };
 
@@ -480,7 +508,13 @@
         window.saveNotice = async () => { await addDoc(collection(db, "notices"), { title: document.getElementById('n_title').value, text: document.getElementById('n_text').value, type: document.getElementById('n_type').value, createdAt: serverTimestamp() }); nModal.hide(); };
         window.deleteNotice = async (id) => { if(confirm('Delete?')) await deleteDoc(doc(db, "notices", id)); };
         window.closePlayer = () => { document.getElementById('coursePlayer').classList.add('hidden-view'); document.getElementById('courseGalleryRoot').classList.remove('hidden-view'); document.getElementById('videoFrame').src = ""; };
-        window.openCourseModal = () => { document.getElementById('m_id').value = ""; cModal.show(); };
+        window.openCourseModal = () => { 
+            document.getElementById('m_id').value = ""; 
+            document.getElementById('m_title').value = "";
+            document.getElementById('m_img').value = "";
+            document.getElementById('m_video').value = "";
+            cModal.show(); 
+        };
         window.openNoticeModal = () => nModal.show();
         document.getElementById('logoutBtn').onclick = () => signOut(auth);
     </script>
