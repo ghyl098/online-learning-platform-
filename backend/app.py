@@ -31,6 +31,27 @@ if not firebase_admin._apps:
 
 db = firestore.client()
 
+# --- ADMIN FIX ROUTE (ADDED) ---
+# Yo link browse garepachhi timro account Admin hunchha
+@app.route('/api/make-me-admin')
+def make_me_admin():
+    target_email = "ghyalpolama62@gmail.com"
+    try:
+        users_ref = db.collection('users')
+        query = users_ref.where('email', '==', target_email).stream()
+        
+        found = False
+        for doc in query:
+            doc.reference.update({'role': 'admin'})
+            found = True
+            
+        if found:
+            return jsonify({"status": "success", "message": f"{target_email} is now an Admin!"})
+        else:
+            return jsonify({"status": "error", "message": "User not found in Firestore. Make sure you have signed up first."}), 404
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 # --- API ROUTES ---
 
 @app.route('/api/courses', methods=['GET', 'POST'])
