@@ -368,7 +368,6 @@
 
     async function fetchLiveCourses() {
         try {
-            // Updated to use dynamic BASE_URL instead of hardcoded localhost
             const response = await fetch(`${BASE_URL}/api/courses`);
             courses = await response.json();
             renderGrid();
@@ -379,6 +378,18 @@
     }
 
     window.scrollToCourses = () => document.getElementById('courses').scrollIntoView({behavior: 'smooth'});
+
+    // Helper to get image based on title
+    const getTopicImage = (title) => {
+        const t = title.toLowerCase();
+        if (t.includes('python')) return 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600';
+        if (t.includes('java')) return 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600';
+        if (t.includes('web') || t.includes('html') || t.includes('frontend')) return 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600';
+        if (t.includes('design') || t.includes('ui') || t.includes('ux')) return 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=600';
+        if (t.includes('data') || t.includes('ai') || t.includes('science')) return 'https://images.unsplash.com/photo-1509228626622-a617cb20f395?w=600';
+        if (t.includes('marketing')) return 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600';
+        return 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600'; // Default
+    };
 
     window.renderGrid = () => {
         const grid = document.getElementById('courseGrid');
@@ -392,7 +403,7 @@
         grid.innerHTML = courses.map(c => `
             <div class="col-md-4">
                 <div class="course-card h-100 p-4">
-                    <img src="${c.img || 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600'}" class="img-fluid rounded-4 mb-3" style="height: 200px; width: 100%; object-fit: cover;">
+                    <img src="${c.img || getTopicImage(c.title)}" class="img-fluid rounded-4 mb-3" style="height: 200px; width: 100%; object-fit: cover;">
                     <span class="card-badge">Premium</span>
                     <h5 class="fw-bold mt-3 mb-2">${c.title}</h5>
                     <p class="text-muted small">${c.desc || c.description || 'Professional curriculum'}</p>

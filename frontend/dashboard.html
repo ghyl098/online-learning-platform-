@@ -222,15 +222,15 @@
             <div class="modal-header bg-dark text-white"><h5 class="modal-title" id="courseModalTitle">Manage Course</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
             <div class="modal-body">
                 <input type="hidden" id="m_id">
-                <div class="mb-3"><input type="text" id="m_title" class="form-control" placeholder="Course Title"></div>
-                <div class="mb-3"><select id="m_cat" class="form-select">
+                <div class="mb-3"><label class="small fw-bold">Title</label><input type="text" id="m_title" class="form-control" placeholder="Course Title"></div>
+                <div class="mb-3"><label class="small fw-bold">Category</label><select id="m_cat" class="form-select">
                     <option value="Engineering">Engineering</option>
                     <option value="Data Science">Data Science</option>
                     <option value="Cybersecurity">Cybersecurity</option>
                     <option value="UI/UX">UI/UX Design</option>
                 </select></div>
-                <div class="mb-3"><input type="text" id="m_img" class="form-control" placeholder="Image URL"></div>
-                <div class="mb-3"><input type="text" id="m_video" class="form-control" placeholder="YouTube URL"></div>
+                <div class="mb-3"><label class="small fw-bold">Image URL</label><input type="text" id="m_img" class="form-control" placeholder="Image URL"></div>
+                <div class="mb-3"><label class="small fw-bold">Video URL (Embed)</label><input type="text" id="m_video" class="form-control" placeholder="YouTube URL"></div>
             </div>
             <div class="modal-footer"><button class="btn btn-primary w-100" onclick="saveCourse()" id="saveCourseBtn">Save Course</button></div>
         </div></div>
@@ -271,16 +271,14 @@
         window.allCourses = [];
         window.userAnswers = {};
 
-        // --- ADAPTIVE API BASE FIX ---
         const apiBase = (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') 
                         ? 'http://127.0.0.1:5000' 
-                        : 'https://online-learning-platform-red.vercel.app'; // Timro naya domain yeta rakheko chhu
+                        : 'https://online-learning-platform-red.vercel.app';
 
         onAuthStateChanged(auth, async (user) => {
             if (!user) { window.location.href = "index.html"; return; }
             currentUser = user;
             
-            // Register User call with updated apiBase
             try {
                 await fetch(`${apiBase}/api/register-user`, {
                     method: 'POST',
@@ -313,6 +311,66 @@
             loadStudentData(user.email);
         });
 
+        // --- CORE ADMIN FUNCTIONS (FIXED) ---
+
+        window.saveCourse = async () => {
+            const id = document.getElementById('m_id').value;
+            const data = {
+                title: document.getElementById('m_title').value,
+                category: document.getElementById('m_cat').value,
+                img: document.getElementById('m_img').value,
+                video: document.getElementById('m_video').value,
+                updatedAt: serverTimestamp()
+            };
+
+            if(!data.title || !data.video) return alert("Title and Video URL are required!");
+
+            try {
+                if(id) {
+                    await updateDoc(doc(db, "courses", id), data);
+                } else {
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, "courses"), data);
+                }
+                cModal.hide();
+            } catch (err) {
+                console.error("Save failed:", err);
+            }
+        };
+
+        window.editCourse = (id) => {
+            const c = window.allCourses.find(x => x.id === id);
+            if(!c) return;
+            document.getElementById('m_id').value = c.id;
+            document.getElementById('m_title').value = c.title;
+            document.getElementById('m_cat').value = c.category;
+            document.getElementById('m_img').value = c.img;
+            document.getElementById('m_video').value = c.video;
+            document.getElementById('courseModalTitle').innerText = "Edit Course";
+            cModal.show();
+        };
+
+        window.deleteCourse = async (id) => {
+            if(confirm("Are you sure to delete this course permanently?")) {
+                await deleteDoc(doc(db, "courses", id));
+            }
+        };
+
+        window.saveNotice = async () => {
+            const title = document.getElementById('n_title').value;
+            const text = document.getElementById('n_text').value;
+            const type = document.getElementById('n_type').value;
+
+            if(!title || !text) return;
+
+            await addDoc(collection(db, "notices"), {
+                title, text, type, createdAt: serverTimestamp()
+            });
+            nModal.hide();
+        };
+
+        // --- DASHBOARD LOGIC ---
+
         async function loadStudentData(email) {
             const feeDoc = await getDoc(doc(db, "fees", email));
             if(feeDoc.exists()){
@@ -321,6 +379,7 @@
             }
             const resDoc = await getDoc(doc(db, "results", email));
             if(resDoc.exists()) document.getElementById('resultsContent').innerHTML = `<h5>Results</h5>` + resDoc.data().htmlContent;
+            
             const routineDoc = await getDoc(doc(db, "routines", "general"));
             if(routineDoc.exists()) {
                 document.getElementById('routineContent').innerHTML = `<h5>Schedule</h5>` + routineDoc.data().htmlContent;
@@ -329,18 +388,26 @@
         }
 
         window.updateStudentResult = async () => {
-            await setDoc(doc(db, "results", document.getElementById('adm_res_email').value), { htmlContent: document.getElementById('adm_res_html').value, updatedAt: serverTimestamp() });
-            alert("Result Published");
+            const email = document.getElementById('adm_res_email').value;
+            if(!email) return;
+            await setDoc(doc(db, "results", email), { htmlContent: document.getElementById('adm_res_html').value, updatedAt: serverTimestamp() });
+            alert("Result Published!");
         };
 
         window.updateStudentFee = async () => {
-            await setDoc(doc(db, "fees", document.getElementById('adm_fee_email').value), { amount: document.getElementById('adm_fee_amount').value, status: document.getElementById('adm_fee_status').value, updatedAt: serverTimestamp() });
-            alert("Fee Updated");
+            const email = document.getElementById('adm_fee_email').value;
+            if(!email) return;
+            await setDoc(doc(db, "fees", email), { 
+                amount: document.getElementById('adm_fee_amount').value, 
+                status: document.getElementById('adm_fee_status').value, 
+                updatedAt: serverTimestamp() 
+            });
+            alert("Fee Ledger Updated!");
         };
 
         window.updateGlobalRoutine = async () => {
             await setDoc(doc(db, "routines", "general"), { htmlContent: document.getElementById('adm_routine_html').value });
-            alert("Routine Updated");
+            alert("Global Routine Updated!");
         };
 
         function syncCourses() {
@@ -498,43 +565,8 @@
             nModal.show();
         };
 
-        window.saveNotice = async () => {
-            await addDoc(collection(db, "notices"), {
-                title: document.getElementById('n_title').value,
-                text: document.getElementById('n_text').value,
-                type: document.getElementById('n_type').value,
-                createdAt: serverTimestamp()
-            });
-            nModal.hide();
-        };
-
-        window.saveCourse = async () => {
-            const courseData = {
-                title: document.getElementById('m_title').value,
-                category: document.getElementById('m_cat').value,
-                img: document.getElementById('m_img').value,
-                video: document.getElementById('m_video').value,
-                createdAt: serverTimestamp()
-            };
-            await addDoc(collection(db, "courses"), courseData);
-            
-            // Flask backend synchronization
-            try {
-                await fetch(`${apiBase}/api/courses`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(courseData)
-                });
-            } catch (e) { console.error("Flask Sync Error:", e); }
-            
-            cModal.hide();
-        };
-
-        window.deleteCourse = async (id) => {
-            if(confirm("Delete this course?")) await deleteDoc(doc(db, "courses", id));
-        };
-
         document.getElementById('logoutBtn').onclick = () => signOut(auth);
+
     </script>
 </body>
 </html>
