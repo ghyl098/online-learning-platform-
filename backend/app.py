@@ -3,17 +3,28 @@ from flask_cors import CORS
 import firebase_admin
 from firebase_admin import credentials, firestore
 import os
+import json
 
 app = Flask(__name__)
 CORS(app)
 
 # --- FIREBASE SETUP ---
-# Timro JSON file ko path yaha milaunu hos
-cred_path = os.path.join(os.path.dirname(__file__), 'serviceAccountKey.json')
-
 if not firebase_admin._apps:
-    cred = credentials.Certificate(cred_path)
-    firebase_admin.initialize_app(cred)
+    # 1. Pahila Environment Variable check garne (Vercel/Production ko lagi)
+    if os.environ.get('FIREBASE_SERVICE_ACCOUNT'):
+        service_account_info = json.loads(os.environ.get('FIREBASE_SERVICE_ACCOUNT'))
+        cred = credentials.Certificate(service_account_info)
+    else:
+        # 2. Local ma huda file batai credentials line
+        cred_path = os.path.join(os.path.dirname(__file__), 'serviceAccountKey.json')
+        if os.path.exists(cred_path):
+            cred = credentials.Certificate(cred_path)
+        else:
+            print("Error: serviceAccountKey.json bhetiyena!")
+            cred = None
+
+    if cred:
+        firebase_admin.initialize_app(cred)
 
 db = firestore.client()
 

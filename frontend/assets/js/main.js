@@ -12,35 +12,44 @@ let allCourses = [
 let currentSearch = "";
 let currentCategory = "All";
 
-// --- BACKEND SYNC (FIXED FOR CONTINUOUS LOADING) ---
+// --- BACKEND SYNC (ADAPTIVE FOR LOCAL & VERCEL) ---
 async function syncWithBackend() {
     try {
-        const res = await fetch('http://127.0.0.1:5000/api/courses');
+        // Detects if running locally or on Vercel to use the correct API path
+        const apiPath = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' 
+                        ? 'http://127.0.0.1:5000/api/courses' 
+                        : '/api/courses';
+
+        const res = await fetch(apiPath);
         if (!res.ok) throw new Error("Backend not responding");
         
         const backendData = await res.json();
         
         if (backendData.length > 0) {
-            // Backend bata naya data ayo bhane static data sanga merge garne
+            // Formats Firebase data to match your frontend structure
             const formatted = backendData.map(c => ({
-                id: c.id,
-                category: c.category || "Professional",
+                id: String(c.id), 
+                category: "Online Course",
                 title: c.title,
-                instructor: c.instructor || "Expert Instructor",
-                price: c.price || "Premium",
-                img: c.img || "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600"
+                instructor: "Expert Instructor", 
+                price: "FREE",                   
+                img: "https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=600"
             }));
             
-            // Merge static and backend data, then remove duplicates by ID
+            // Merge static and backend data
             const combined = [...allCourses, ...formatted];
+            
+            // Remove duplicates based on ID
             allCourses = Array.from(new Map(combined.map(item => [item.id, item])).values());
+
+            console.log("Data synced successfully!", allCourses);
 
             // Re-render based on current page
             if (document.getElementById('courseGrid')) renderFeatured();
             if (document.getElementById('courseList')) renderFullCatalog();
         }
     } catch (e) {
-        console.log("Backend offline chha, using static code only.");
+        console.log("Sync Error: ", e.message);
     }
 }
 
