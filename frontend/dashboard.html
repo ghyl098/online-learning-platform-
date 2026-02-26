@@ -34,12 +34,10 @@
         .lesson-item { cursor: pointer; padding: 12px 15px; font-size: 0.85rem; border-radius: 8px; margin: 4px 10px; transition: 0.2s; border-left: 3px solid transparent; color: #475569; }
         .lesson-item:hover { background: #f1f5f9; color: var(--primary); }
 
-        /* Course Player Tabs */
         .player-tabs { display: flex; gap: 15px; border-bottom: 2px solid #f1f5f9; margin-bottom: 20px; }
         .p-tab { padding: 10px 5px; cursor: pointer; font-weight: 600; color: #94a3b8; border-bottom: 3px solid transparent; }
         .p-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
 
-        /* Quiz Styling */
         .quiz-option { border: 1px solid #e2e8f0; padding: 12px; border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: 0.2s; }
         .quiz-option:hover { background: #f8fafc; border-color: var(--primary); }
         .quiz-option.selected { background: var(--primary); color: white; border-color: var(--primary); }
@@ -273,14 +271,17 @@
         window.allCourses = [];
         window.userAnswers = {};
 
+        // --- ADAPTIVE API BASE ---
+        const apiBase = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' 
+                        ? 'http://127.0.0.1:5000' 
+                        : ''; 
+
         onAuthStateChanged(auth, async (user) => {
             if (!user) { window.location.href = "index.html"; return; }
             currentUser = user;
             
-            // --- SYNC WITH FLASK BACKEND ON LOGIN ---
-            // Register user in SQLite Database via Flask
             try {
-                await fetch('http://127.0.0.1:5000/api/register-user', {
+                await fetch(`${apiBase}/api/register-user`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -311,7 +312,6 @@
             loadStudentData(user.email);
         });
 
-        // RE-INTEGRATED FUNCTIONS
         async function loadStudentData(email) {
             const feeDoc = await getDoc(doc(db, "fees", email));
             if(feeDoc.exists()){
@@ -360,6 +360,10 @@
             });
         }
 
+        window.deleteNotice = async (id) => {
+            if(confirm("Delete this notice?")) await deleteDoc(doc(db, "notices", id));
+        };
+
         function syncUsers() {
             onSnapshot(collection(db, "users"), (snap) => {
                 document.getElementById('stat-students').innerText = snap.size;
@@ -406,6 +410,12 @@
                 { q: "Who is the primary audience for this course?", opts: ["Beginners", "Experts", "Managers", "All"], a: 3 }
             ];
             renderQuiz();
+        };
+
+        window.closePlayer = () => {
+            document.getElementById('coursePlayer').classList.add('hidden-view');
+            document.getElementById('courseGalleryRoot').classList.remove('hidden-view');
+            document.getElementById('videoFrame').src = "";
         };
 
         function renderQuiz() {
@@ -465,22 +475,46 @@
 
         window.showView = (v, btn) => {
             document.querySelectorAll('.content-view').forEach(view => view.classList.add('hidden-view'));
-            document.getElementById(`view-${v}`).classList.remove('hidden-view');
+            const targetView = document.getElementById(`view-${v}`);
+            if(targetView) targetView.classList.remove('hidden-view');
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             if(btn) btn.classList.add('active');
             document.getElementById('viewTitle').innerText = v.toUpperCase();
+        };
+
+        window.openCourseModal = () => {
+            document.getElementById('m_id').value = "";
+            document.getElementById('m_title').value = "";
+            document.getElementById('m_img').value = "";
+            document.getElementById('m_video').value = "";
+            document.getElementById('courseModalTitle').innerText = "Add New Course";
+            cModal.show();
+        };
+
+        window.openNoticeModal = () => {
+            document.getElementById('n_title').value = "";
+            document.getElementById('n_text').value = "";
+            nModal.show();
+        };
+
+        window.saveNotice = async () => {
+            await addDoc(collection(db, "notices"), {
+                title: document.getElementById('n_title').value,
+                text: document.getElementById('n_text').value,
+                type: document.getElementById('n_type').value,
+                createdAt: serverTimestamp()
+            });
+            nModal.hide();
         };
 
         window.saveCourse = async () => {
             const id = document.getElementById('m_id').value;
             const data = { title: document.getElementById('m_title').value, category: document.getElementById('m_cat').value, img: document.getElementById('m_img').value, video: document.getElementById('m_video').value, updatedAt: serverTimestamp() };
             
-            // 1. SAVE TO FIREBASE
             id ? await updateDoc(doc(db, "courses", id), data) : await addDoc(collection(db, "courses"), { ...data, createdAt: serverTimestamp() });
             
-            // 2. SAVE TO FLASK (SQLITE) - Optional Sync
             try {
-                await fetch('http://127.0.0.1:5000/api/courses', {
+                await fetch(`${apiBase}/api/courses`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -501,22 +535,17 @@
             document.getElementById('m_cat').value = c.category;
             document.getElementById('m_img').value = c.img;
             document.getElementById('m_video').value = c.video;
+            document.getElementById('courseModalTitle').innerText = "Edit Course";
             cModal.show();
         };
 
-        window.deleteCourse = async (id) => { if(confirm('Delete?')) await deleteDoc(doc(db, "courses", id)); };
-        window.saveNotice = async () => { await addDoc(collection(db, "notices"), { title: document.getElementById('n_title').value, text: document.getElementById('n_text').value, type: document.getElementById('n_type').value, createdAt: serverTimestamp() }); nModal.hide(); };
-        window.deleteNotice = async (id) => { if(confirm('Delete?')) await deleteDoc(doc(db, "notices", id)); };
-        window.closePlayer = () => { document.getElementById('coursePlayer').classList.add('hidden-view'); document.getElementById('courseGalleryRoot').classList.remove('hidden-view'); document.getElementById('videoFrame').src = ""; };
-        window.openCourseModal = () => { 
-            document.getElementById('m_id').value = ""; 
-            document.getElementById('m_title').value = "";
-            document.getElementById('m_img').value = "";
-            document.getElementById('m_video').value = "";
-            cModal.show(); 
+        window.deleteCourse = async (id) => {
+            if(confirm("Are you sure?")) await deleteDoc(doc(db, "courses", id));
         };
-        window.openNoticeModal = () => nModal.show();
-        document.getElementById('logoutBtn').onclick = () => signOut(auth);
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            signOut(auth).then(() => window.location.href = "index.html");
+        });
     </script>
 </body>
 </html>

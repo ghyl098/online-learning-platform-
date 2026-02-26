@@ -6,7 +6,8 @@ import os
 import json
 
 app = Flask(__name__)
-CORS(app)
+# Vercel ma deploy garda CORS le dherai tension dincha, tesaile full allow gareko chhu
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # --- FIREBASE SETUP ---
 if not firebase_admin._apps:
@@ -30,19 +31,40 @@ db = firestore.client()
 
 # --- API ROUTES ---
 
+# missing register-user route thapeko (Dashboard login ko lagi chaincha)
+@app.route('/api/register-user', methods=['POST'])
+def register_user():
+    try:
+        data = request.get_json()
+        uid = data.get('uid')
+        if not uid:
+            return jsonify({"error": "No UID provided"}), 400
+        
+        # User details lai Firestore ko 'users' collection ma save garne
+        user_ref = db.collection('users').document(uid)
+        user_ref.set({
+            "username": data.get('username'),
+            "email": data.get('email'),
+            "uid": uid,
+            "last_login": firestore.SERVER_TIMESTAMP
+        }, merge=True) # merge=True le purano data delete gardaina, update matra garchha
+
+        return jsonify({"status": "success", "message": "User registered in Firestore"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/courses', methods=['GET', 'POST'])
 def handle_courses():
     try:
         # 1. Firebase bata Data Fetch garne (GET)
         if request.method == 'GET':
-            courses_ref = db.collection('courses') # Firebase collection name
+            courses_ref = db.collection('courses') 
             docs = courses_ref.stream()
             
             course_list = []
             for doc in docs:
                 data = doc.to_dict()
                 data['id'] = doc.id
-                # Frontend le khojne formats haru milaideko
                 course_list.append({
                     "id": doc.id,
                     "title": data.get('title', 'No Title'),
@@ -59,7 +81,6 @@ def handle_courses():
                 "description": data.get('description') or data.get('desc'),
                 "video_url": data.get('video_url') or data.get('url')
             }
-            # Firebase ma auto-id generate garera save hunchha
             db.collection('courses').add(new_course)
             return jsonify({"status": "success", "message": "Course saved to Firebase!"}), 201
 
